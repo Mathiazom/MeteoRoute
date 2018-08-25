@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/forecast_preview_icon_size"
+    android:layout_height="@dimen/forecast_preview_icon_text_height"
+    android:layout_weight="1">
+
+    <LinearLayout
+        android:layerType="software"
+        android:id="@+id/point_dotted_line_start"
+        android:padding="0dp"
+        android:layout_margin="0dp"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/forecast_preview_icon_text_height"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:background="@drawable/dotted_line"
+        android:orientation="horizontal" />
+
+    <ImageView
+        android:id="@+id/point_marker"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/forecast_preview_icon_text_height"
+        android:layout_weight="1"
+        android:src="@drawable/ic_point"
+        android:tint="@color/colorWhite" />
+
+    <LinearLayout
+        android:layerType="software"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/forecast_preview_icon_text_height"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:background="@drawable/dotted_line" />
+
+</LinearLayout>

@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">MeteoRoute</string>
+    <string name="stylish_app_name"><b>Meteo</b>Route</string>
+    <string name="mapbox_api_key">pk.eyJ1IjoibWF0aGlhem9tIiwiYSI6ImNqanR2b3didjRoNTYza3Jtcng0MGZpZXIifQ.lcXnXOOIh8VdVVyEp9u45A</string>
+    <string name="accu_weather_api_key">wd33GBZMGx1Lg0LJmVA5g3GdzYdIzycb</string>
+    <string name="open_weather_map_api_key">8e898a01b2f145ffdec237c1b54870ac</string>
+    <string name="map_center_button">Center</string>
+    <string name="destination_search_hint">Where do you want to go?</string>
+    <string name="origin_search_hint">Where will you start?</string>
+    <string name="search_edit_container_transition_name">search_edit_container</string>
+    <string name="your_location">Your location</string>
+    <string name="start_time_hint">When will you start?</string>
+    <string name="editOriginTransitionName">editOriginTransitionName</string>
+    <string name="route_duration_TEMPLATE">2h 50min</string>
+    <string name="route_distance_TEMPLATE">(160 km)</string>
+</resources>

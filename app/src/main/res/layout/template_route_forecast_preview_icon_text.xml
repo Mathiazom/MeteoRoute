@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView android:layout_width="@dimen/forecast_preview_icon_size"
+    android:layout_height="@dimen/forecast_preview_icon_text_height"
+    android:layout_weight="1"
+    android:gravity="center"
+    android:textColor="@color/colorWhite"
+    xmlns:android="http://schemas.android.com/apk/res/android" />

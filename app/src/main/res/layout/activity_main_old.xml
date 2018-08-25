@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.mzom.meteoroute.MainActivity">
+
+    <Button
+        android:id="@+id/center_map_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/white_rounded"
+        android:text="@string/map_center_button"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/search_container" />
+
+    <com.mapbox.mapboxsdk.maps.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/route_info_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        mapbox:mapbox_cameraTargetLat="62.7372"
+        mapbox:mapbox_cameraTargetLng="7.1607"
+        mapbox:mapbox_cameraZoom="7"
+        mapbox:mapbox_styleUrl="mapbox://styles/mapbox/streets-v10">
+
+
+    </com.mapbox.mapboxsdk.maps.MapView>
+
+    <LinearLayout
+        android:id="@+id/search_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@drawable/primary_rounded_bottom">
+
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="4"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <EditText
+                android:id="@+id/editTextOrigin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Origin"
+                android:textColor="@color/colorWhite"
+                android:textColorHint="@color/colorWhiteDark"
+                android:textSize="20sp"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:id="@+id/menu_icon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="15dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="15dp"
+                android:src="@drawable/ic_menu"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <android.support.constraint.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="15dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/primary_light_rounded"
+                android:padding="5dp"
+                app:layout_constraintStart_toEndOf="@id/menu_icon"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <EditText
+                    android:id="@+id/editTextDestination"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:hint="@string/destination_search_hint"
+                    android:padding="5dp"
+                    android:textColor="@color/colorWhite"
+                    android:textColorHint="@color/colorWhite"
+                    android:textSize="15sp"
+                    android:lines="1"
+                    android:maxLines="1"/>
+
+            </android.support.constraint.ConstraintLayout>
+
+        </android.support.constraint.ConstraintLayout>
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/query_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@drawable/primary_rounded_bottom">
+
+        <android.support.constraint.ConstraintLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="4"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/cancelRouteIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="15dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="15dp"
+                android:src="@drawable/ic_cancel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/originEditContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="15dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/primary_light_rounded"
+                android:padding="5dp"
+                app:layout_constraintStart_toEndOf="@id/cancelRouteIcon"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <EditText
+                    android:id="@+id/editOrigin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:hint="@string/origin_search_hint"
+                    android:padding="5dp"
+                    android:textColor="@color/colorWhite"
+                    android:textColorHint="@color/colorWhite"
+                    android:textSize="15sp"
+                    android:lines="1"
+                    android:maxLines="1"/>
+
+            </android.support.constraint.ConstraintLayout>
+
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/destinationEditContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="15dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/primary_light_rounded"
+                android:padding="5dp"
+                app:layout_constraintStart_toEndOf="@id/cancelRouteIcon"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/originEditContainer">
+
+                <EditText
+                    android:id="@+id/editDestination"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:hint="@string/destination_search_hint"
+                    android:padding="5dp"
+                    android:textColor="@color/colorWhite"
+                    android:textColorHint="@color/colorWhite"
+                    android:textSize="15sp"
+                    android:lines="1"
+                    android:maxLines="1"/>
+
+            </android.support.constraint.ConstraintLayout>
+
+        </android.support.constraint.ConstraintLayout>
+
+        <!--<ImageView
+            android:id="@+id/search_directions_button"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:src="@drawable/baseline_directions_white_48dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/linearLayout" />-->
+
+
+    </LinearLayout>
+
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/route_info_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:orientation="horizontal"
+        android:paddingBottom="20dp"
+        android:paddingEnd="25dp"
+        android:paddingStart="25dp"
+        android:paddingTop="20dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mapView">
+
+        <TextView
+            android:id="@+id/route_total_distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorWhite"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/route_total_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:alpha="0.9"
+            android:textColor="@color/colorWhite"
+            android:textSize="18sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/route_total_distance"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:src="@drawable/ic_arr_up"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </android.support.constraint.ConstraintLayout>
+
+
+</android.support.constraint.ConstraintLayout>
