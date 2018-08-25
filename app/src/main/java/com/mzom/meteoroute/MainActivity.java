@@ -26,7 +26,7 @@ import com.mapbox.mapboxsdk.Mapbox;
 
 import java.util.Calendar;
 
-public class MainActivity extends AppCompatActivity implements FragmentLoader, StartFragment.LoadSearchFromStartCallback, RouteFragment.RouteFragmentListener {
+public class MainActivity extends AppCompatActivity implements StartFragment.LoadSearchFromStartCallback, RouteFragment.RouteFragmentListener {
 
     private static final String TAG = "MRU-MainActivity";
 
@@ -195,8 +195,8 @@ public class MainActivity extends AppCompatActivity implements FragmentLoader, S
         Log.i(TAG, "Loaded search fragment from start fragment");
     }
 
-    @Override
-    public void loadStartFragment() {
+
+    private void loadStartFragment() {
 
         mStartFragment = new StartFragment();
 
