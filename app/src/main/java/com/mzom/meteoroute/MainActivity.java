@@ -1,11 +1,13 @@
 package com.mzom.meteoroute;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
@@ -21,12 +23,13 @@ import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.mapbox.directions.service.models.Waypoint;
 import com.mapbox.mapboxsdk.Mapbox;
 
 import java.util.Calendar;
 
-public class MainActivity extends AppCompatActivity implements StartFragment.LoadSearchFromStartCallback, RouteFragment.RouteFragmentListener {
+public class MainActivity extends AppCompatActivity implements StartFragment.LoadSearchFromStartCallback, RouteFragment.RouteFragmentListener, LoadingManager {
 
     private static final String TAG = "MRU-MainActivity";
 
@@ -36,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
     private SearchFragment mSearchFragment;
 
     private RouteFragment mRouteFragment;
+
+    private LoadingFragment mLoadingFragment;
 
     private long startTime;
 
@@ -47,9 +52,7 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
 
     private FusedLocationProviderClient mFusedLocationClient;
 
-    private LocationManager mLocationManager;
-
-    private Location mCurrentLocation;
+    /*private Location mCurrentLocation;
 
 
     private static final long LOCATION_REFRESH_TIME = 60000;
@@ -78,6 +81,20 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
         public void onProviderDisabled(String provider) {
 
         }
+    };*/
+
+    private final OnSuccessListener<Location> mFusedLocationListener = new OnSuccessListener<Location>() {
+        @Override
+        public void onSuccess(Location location) {
+            if (location != null) {
+
+                //mCurrentLocation = location;
+
+                startTime = Calendar.getInstance().getTimeInMillis();
+                origin = new Waypoint(location.getLongitude(), location.getLatitude());
+                originPlaceName = "Your location";
+            }
+        }
     };
 
 
@@ -89,65 +106,74 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
 
         setContentView(R.layout.activity_main);
 
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        if (!hasCurrentLocationPermissions()) {
+            loadPermissionsFragment();
+        }
 
-        mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        Log.i(TAG, "All permissions are granted");
 
+        // Try to retrieve current location if necessary permissions are granted
         requestLocationUpdates();
 
+        // Let user search for and pick route destination while app is retrieving current location (route origin)
         loadStartFragment();
 
     }
 
+    // Check if application has the necessary permissions to get device's current location
+    private boolean hasCurrentLocationPermissions() {
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // Request user permissions with PermissionsFragment
+    private void loadPermissionsFragment() {
+
+        final PermissionsFragment permissionsFragment = PermissionsFragment.newInstance(() -> {
+
+            // Continue to StartFragment without location permissions
+            loadStartFragment();
+
+        });
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.main_frame_layout, permissionsFragment)
+                .addToBackStack(StartFragment.class.getSimpleName())
+                .commit();
+
+    }
+
+
+    @SuppressLint("MissingPermission")
+    // Permissions check is done with hasCurrentLocationPermissions()
     private void requestLocationUpdates() {
 
-        if (mLocationManager != null) {
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (!hasCurrentLocationPermissions()) {
+            return;
+        }
 
-                // Get permissions it not granted
-                requestRequiredPermissions();
+        mFusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, mFusedLocationListener);
 
+        /*final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+        if (locationManager != null) {
+
+            if (!hasCurrentLocationPermissions()) {
                 return;
-
             }
 
             mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(this, location -> {
-                        if (location != null) {
-                            mCurrentLocation = location;
+                    .addOnSuccessListener(this, mFusedLocationListener);
 
-                            startTime = Calendar.getInstance().getTimeInMillis();
-                            origin = new Waypoint(location.getLongitude(),location.getLatitude());
-                            originPlaceName = "Your location";
-                            /*destination = new Waypoint(6.149482,62.472229);
-                            destinationPlaceName = "Ålesund";
-
-                            buildRoute(origin, originPlaceName, destination, destinationPlaceName, startTime, new OnRouteBuiltListener() {
-                                @Override
-                                public void onRouteBuilt(Route route) {
-                                    if(mRouteFragment == null) loadRouteFragment(route);
-                                }
-
-                                @Override
-                                public void onRouteBuildFailed() {
-                                    Log.e(TAG,"Could not build route");
-                                }
-                            });*/
-                        }
-                    });
-
-            mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
                     LOCATION_REFRESH_DISTANCE, mLocationListener);
-        }
+        }*/
     }
 
     private static final int PERMISSION_REQUEST_CODE = 1600;
-
-    private void requestRequiredPermissions() {
-
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_CODE);
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -157,44 +183,45 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
 
             for (int i : grantResults) {
                 if (i == PackageManager.PERMISSION_DENIED) {
-                    Log.i(TAG, "Some permissions denied");
+
+                    Log.e(TAG, permissions[i] + " is not granted");
+
                     return;
                 }
             }
 
+            Log.i(TAG, "All permissions are granted");
+
+            // Try to retrieve current location if necessary permissions are granted
             requestLocationUpdates();
 
+            // Let user search for and pick route destination while app is retrieving current location (route origin)
+            loadStartFragment();
 
         }
 
     }
 
-    private void loadLoadingFragment(){
+    private void loadLoadingFragment(String loadingMessage) {
 
-        /*final FrameLayout overlayFrameLayout = findViewById(R.id.overlay_frame_layout);
-        final ConstraintLayout overlayLayout = (ConstraintLayout) getLayoutInflater().inflate(R.layout.module_overlay_building_route,overlayFrameLayout,false);
-        overlayFrameLayout.addView(overlayLayout);*/
-
-        final LoadingFragment loadingFragment = new LoadingFragment();
+        mLoadingFragment = LoadingFragment.newInstance(loadingMessage);
 
         // Specify fragment transitions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
-            loadingFragment.setSharedElementEnterTransition(new TransitionSet().addTransition(new ChangeBounds()).
+            mLoadingFragment.setSharedElementEnterTransition(new TransitionSet().addTransition(new ChangeBounds()).
                     addTransition(new ChangeTransform()).
                     addTransition(new ChangeImageTransform()));
 
-            loadingFragment.setEnterTransition(new Fade());
+            mLoadingFragment.setEnterTransition(new Fade());
         }
 
         // Actual fragment replacement
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_layout, loadingFragment)
-                .addToBackStack(SearchFragment.class.getSimpleName())
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_layout, mLoadingFragment)
+                .addToBackStack(LoadingFragment.class.getSimpleName())
                 .commit();
 
-        Log.i(TAG, "Loaded search fragment from start fragment");
     }
-
 
     private void loadStartFragment() {
 
@@ -207,22 +234,52 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
                 .commit();
     }
 
+    // Transaction-specific method between start and search necessary to display shared element animation (route destination EditText)
     @Override
     public void loadSearchFragmentFromStart() {
 
         // Create fragment to search for route destination
-        mSearchFragment = SearchFragment.newInstance((waypoint, placeName) -> buildRoute(origin, originPlaceName, waypoint, placeName, startTime, new OnRouteBuiltListener() {
-            @Override
-            public void onRouteBuilt(Route route) {
-                loadRouteFragment(route);
-                hideSearchFragment();
+        mSearchFragment = SearchFragment.newInstance((waypoint, placeName) -> {
+
+            if (origin == null) {
+
+                if (hasCurrentLocationPermissions()) {
+                    // Current location has not been retrieved asynchronously
+                    mFusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                        mFusedLocationListener.onSuccess(location);
+                        buildRoute(origin, originPlaceName, waypoint, placeName, startTime, new OnRouteBuiltListener() {
+                            @Override
+                            public void onRouteBuilt(Route route) {
+                                loadRouteFragment(route);
+                                hideSearchFragment();
+                            }
+
+                            @Override
+                            public void onRouteBuildingFailed() {
+                                Log.e(TAG, "Could not build route");
+                            }
+                        });
+                    });
+                    return;
+                }
+
+                Log.e(TAG, "Origin was null");
+                return;
             }
 
-            @Override
-            public void onRouteBuildFailed() {
-                Log.e(TAG, "Could not build route");
-            }
-        }));
+            buildRoute(origin, originPlaceName, waypoint, placeName, startTime, new OnRouteBuiltListener() {
+                @Override
+                public void onRouteBuilt(Route route) {
+                    loadRouteFragment(route);
+                    hideSearchFragment();
+                }
+
+                @Override
+                public void onRouteBuildingFailed() {
+                    Log.e(TAG, "Could not build route");
+                }
+            });
+        });
 
         // Specify fragment transitions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -242,8 +299,10 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
         // Shared element to animate in fragment transaction (make sure this view can be retrieved)
         if (mStartFragment.getView() != null) {
 
+            // Shared element
             final ConstraintLayout destinationEditContainer = mStartFragment.getView().findViewById(R.id.start_destination_edit_container);
 
+            // Include shared element in fragment transaction
             transaction.addSharedElement(destinationEditContainer, getString(R.string.search_edit_container_transition_name));
 
         }
@@ -253,26 +312,30 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
                 .addToBackStack(SearchFragment.class.getSimpleName())
                 .commit();
 
-        Log.i(TAG, "Loaded search fragment from start fragment");
-
     }
 
+    // Display route with RouteFragment
     private void loadRouteFragment(Route route) {
 
-        if(mRouteFragment == null){
+        setLoadingMessage("Loading route");
+
+        if (mRouteFragment == null) {
+            // Create new route fragment with new route
             mRouteFragment = RouteFragment.newInstance(route);
-        }else{
+        } else {
+            // Load new route to already existing fragment
             mRouteFragment.loadRoute(route);
         }
 
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.main_frame_layout, mRouteFragment)
-                .addToBackStack(SearchFragment.class.getSimpleName())
+                //.addToBackStack(SearchFragment.class.getSimpleName())
                 .commit();
     }
 
-    private void loadSearchFragment(SearchFragment.OnWaypointSelectedCallback listener){
+    // Let user search for and pick location (as origin or destination)
+    private void loadSearchFragment(SearchFragment.OnWaypointSelectedCallback listener) {
 
         mSearchFragment = SearchFragment.newInstance(listener);
 
@@ -290,6 +353,7 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
 
     }
 
+    // Let user search for and pick desired route origin
     @Override
     public void loadSearchFragmentForOrigin() {
         loadSearchFragment((waypoint, placeName) -> buildRoute(waypoint, placeName, destination, destinationPlaceName, startTime, new OnRouteBuiltListener() {
@@ -300,12 +364,13 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
             }
 
             @Override
-            public void onRouteBuildFailed() {
-                Log.e(TAG,"Could not build route");
+            public void onRouteBuildingFailed() {
+                Log.e(TAG, "Could not build route");
             }
         }));
     }
 
+    // Let user search for and pick desired route destination
     @Override
     public void loadSearchFragmentForDestination() {
         loadSearchFragment((waypoint, placeName) -> buildRoute(origin, originPlaceName, waypoint, placeName, startTime, new OnRouteBuiltListener() {
@@ -316,8 +381,8 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
             }
 
             @Override
-            public void onRouteBuildFailed() {
-                Log.e(TAG,"Could not build route");
+            public void onRouteBuildingFailed() {
+                Log.e(TAG, "Could not build route");
             }
         }));
     }
@@ -340,14 +405,20 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
             }
 
             @Override
-            public void onRouteBuildFailed() {
+            public void onRouteBuildingFailed() {
 
             }
         });
     }
 
+    // Build new route where only start time is changed
     @Override
     public void changeRouteStartTime(long startTime) {
+
+        if (startTime < 0) {
+            Log.e(TAG, "Invalid route start time: " + String.valueOf(startTime));
+            return;
+        }
 
         this.startTime = startTime;
 
@@ -358,26 +429,40 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
             }
 
             @Override
-            public void onRouteBuildFailed() {
-                Log.e(TAG,"Could not build route");
+            public void onRouteBuildingFailed() {
+                Log.e(TAG, "Could not build route");
             }
         });
     }
 
-    private interface OnRouteBuiltListener {
-        void onRouteBuilt(Route route);
-        void onRouteBuildFailed();
-    }
+    @Override
+    public void setLoadingMessage(String message) {
 
-    private void buildRoute(final Waypoint origin, final String originPlaceName, final Waypoint destination, final String destinationPlaceName, long startTime, OnRouteBuiltListener callback){
-
-        // Make sure all the provided values are valid
-        if(!allRouteValuesAreValid(origin,originPlaceName,destination,destinationPlaceName,startTime)){
-            Log.e(TAG,"Not all route values were valid");
+        if(mLoadingFragment == null){
+            loadLoadingFragment(message);
             return;
         }
 
-        loadLoadingFragment();
+        mLoadingFragment.setLoadingMessage(message);
+
+    }
+
+    private interface OnRouteBuiltListener {
+        void onRouteBuilt(Route route);
+
+        void onRouteBuildingFailed();
+    }
+
+    private void buildRoute(final Waypoint origin, final String originPlaceName, final Waypoint destination, final String destinationPlaceName, long startTime, OnRouteBuiltListener callback) {
+
+        // Make sure all the provided values are valid
+        if (!RouteValuesValidator.validateInputs(origin, originPlaceName, destination, destinationPlaceName, startTime)) {
+            Log.e(TAG, "Not all route values were valid");
+            return;
+        }
+
+        // Display a loading screen while route is being built
+        loadLoadingFragment("Building route");
 
         this.origin = origin;
         this.originPlaceName = originPlaceName;
@@ -385,33 +470,28 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
         this.destinationPlaceName = destinationPlaceName;
         this.startTime = startTime;
 
-        JSONRetriever.sendRouteRequest(this,origin, destination, json -> {
+        // Start route creation
+        final RouteBuilder builder = new RouteBuilder(this)
+                .setOrigin(origin, originPlaceName)
+                .setDestination(destination, destinationPlaceName)
+                .setStartTime(startTime);
 
-            // Try to generate a route object from json response
-            final RouteBuilder builder = new RouteBuilder(this)
-                    .setOrigin(origin,originPlaceName)
-                    .setDestination(destination,destinationPlaceName)
-                    .setStartTime(startTime)
-                    .withJson(json);
+        builder.build(new RouteBuilder.RouteBuilderListener() {
+            @Override
+            public void onRouteBuilt(@NonNull Route route) {
+                callback.onRouteBuilt(route);
+            }
 
-            builder.build(route -> {
-
-                if(route != null){
-
-                    callback.onRouteBuilt(route);
-
-                    return;
-                }
-
-                callback.onRouteBuildFailed();
-            });
-
+            @Override
+            public void onRouteBuildingFailed() {
+                callback.onRouteBuildingFailed();
+            }
         });
 
 
     }
 
-    private void buildFlippedRoute(Route toBeFlipped, OnRouteBuiltListener callback){
+    private void buildFlippedRoute(Route toBeFlipped, OnRouteBuiltListener callback) {
 
         buildRoute(toBeFlipped.getDestination(),
                 toBeFlipped.getDestinationPlaceName(),
@@ -419,25 +499,6 @@ public class MainActivity extends AppCompatActivity implements StartFragment.Loa
                 toBeFlipped.getOriginPlaceName(),
                 startTime,
                 callback);
-
-    }
-
-    private boolean allRouteValuesAreValid(final Waypoint origin, final String originPlaceName, final Waypoint destination, final String destinationPlaceName, long startTime){
-
-        /*Log.i(TAG,
-                ", Origin: " + String.valueOf(origin.getLatitude())
-                + ", " + String.valueOf(origin.getLongitude())
-                + ", OriginPlaceName: " + originPlaceName
-                + ", Destination: " + String.valueOf(destination.getLatitude())
-                + ", " + String.valueOf(destination.getLongitude())
-                + ", DestinationPlaceName: " + destinationPlaceName
-                + ", StartTime: " + String.valueOf(startTime));*/
-
-        return origin != null
-                && originPlaceName != null
-                && destination != null
-                && destinationPlaceName != null
-                && startTime > 0;
 
     }
 

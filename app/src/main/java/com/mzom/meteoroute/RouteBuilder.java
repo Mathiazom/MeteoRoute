@@ -1,8 +1,7 @@
 package com.mzom.meteoroute;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
-import android.util.Log;
+import android.support.annotation.NonNull;
 
 import com.mapbox.directions.service.models.Waypoint;
 import com.mapbox.geojson.LineString;
@@ -26,27 +25,36 @@ class RouteBuilder {
 
     private Context mContext;
 
-    long startTime;
+    private LoadingManager loadingManager;
 
-    Waypoint origin;
-    String originPlaceName;
+    private long startTime;
 
-    Waypoint destination;
-    String destinationPlaceName;
+    private Waypoint origin;
+    private String originPlaceName;
 
-    ArrayList<LatLng> coordinates;
+    private Waypoint destination;
+    private String destinationPlaceName;
 
-    LineString lineString;
+    private ArrayList<LatLng> coordinates;
 
-    double distance = -1;
-    double duration = -1;
+    private LineString lineString;
 
-    ArrayList<WeatherNode> weatherNodes;
+    private double distance = -1;
+    private double duration = -1;
 
-    ArrayList<Waypoint> weatherPoints;
+    private ArrayList<WeatherNode> weatherNodes;
+
+    private ArrayList<Waypoint> weatherPoints;
 
     RouteBuilder(Context context){
+
         this.mContext = context;
+
+        try{
+            loadingManager  = (LoadingManager) context;
+        }catch (ClassCastException e){
+            throw new ClassCastException(context.toString() + " must implement LoadingManager");
+        }
     }
 
     RouteBuilder setOrigin(Waypoint origin, String originPlaceName) {
@@ -66,20 +74,51 @@ class RouteBuilder {
         return this;
     }
 
-    RouteBuilder setWeatherNodes(ArrayList<WeatherNode> weatherNodes){
-        this.weatherNodes = weatherNodes;
-        return this;
+    long getStartTime(){
+        return this.startTime;
     }
 
-    RouteBuilder withJson(String json) {
-        this.coordinates = getCoordinates(json);
-        this.lineString = getLineString(json);
-        this.distance = getDistance(json);
-        this.duration = getDuration(json);
-        return this;
+    Waypoint getOrigin(){
+        return this.origin;
     }
 
-    private ArrayList<LatLng> getCoordinates(String json) {
+    String getOriginPlaceName(){
+        return this.originPlaceName;
+    }
+
+    Waypoint getDestination(){
+        return this.destination;
+    }
+
+    String getDestinationPlaceName(){
+        return this.destinationPlaceName;
+    }
+
+    ArrayList<LatLng> getCoordinates(){
+        return this.coordinates;
+    }
+
+    double getDistance() {
+        return this.distance;
+    }
+
+    double getDuration() {
+        return this.duration;
+    }
+
+    ArrayList<WeatherNode> getWeatherNodes() {
+        return this.weatherNodes;
+    }
+
+
+    private void retrieveRouteDataFromJSON(String json) {
+        this.coordinates = coordinatesFromJSON(json);
+        this.lineString = lineStringFromJSON(json);
+        this.distance = distanceFromJSON(json);
+        this.duration = durationFromJSON(json);
+    }
+
+    private ArrayList<LatLng> coordinatesFromJSON(String json) {
 
         if (json == null) return null;
 
@@ -104,7 +143,7 @@ class RouteBuilder {
         return null;
     }
 
-    private LineString getLineString(String json) {
+    private LineString lineStringFromJSON(String json) {
 
         if (json == null) return null;
 
@@ -121,7 +160,7 @@ class RouteBuilder {
         return null;
     }
 
-    private double getDistance(String json) {
+    private double distanceFromJSON(String json) {
 
         if (json == null) return -1;
 
@@ -139,7 +178,7 @@ class RouteBuilder {
 
     }
 
-    private double getDuration(String json) {
+    private double durationFromJSON(String json) {
 
         if (json == null) return -1;
 
@@ -158,17 +197,11 @@ class RouteBuilder {
     }
 
 
-    long benchStart = 0;
-
-    private int requestTimeUsage = 0;
-
     private void createRouteWeatherNodes(Runnable whenFinished){
 
         weatherPoints = getWeatherPoints();
 
         weatherNodes = new ArrayList<>();
-
-        benchStart = System.currentTimeMillis();
 
         JSONRetriever.sendRouteRequest(mContext,origin, origin, handleWeatherNodeJSONResponse(origin, startTime,whenFinished));
     }
@@ -258,8 +291,6 @@ class RouteBuilder {
 
                         if (weatherPoints.indexOf(waypoint) == weatherPoints.size() - 1) {
 
-                            requestTimeUsage += System.currentTimeMillis()-benchStart;
-
                             whenFinished.run();
 
                             return;
@@ -323,39 +354,45 @@ class RouteBuilder {
 
 
     interface RouteBuilderListener{
-        void onRouteBuilt(Route route);
+        void onRouteBuilt(@NonNull Route route);
+        void onRouteBuildingFailed();
     }
 
     // Builds route object from given values, returns null if any of the values are invalid
-    @Nullable
-    void build(RouteBuilderListener callback) {
+    void build(@NonNull RouteBuilderListener callback) {
 
-        final RouteBuilder builder = this;
+        loadingManager.setLoadingMessage("Validating user inputs");
+        if(!RouteValuesValidator.validateInputs(origin,originPlaceName,destination,destinationPlaceName,startTime)){
+            // Builder could not create route with the current data
+            callback.onRouteBuildingFailed();
+        }
 
-        createRouteWeatherNodes(() -> {
-            if(allValuesAreValid()){
-                Route route = new Route(builder);
-                callback.onRouteBuilt(route);
-            }
+        loadingManager.setLoadingMessage("Requesting route from inputs");
+        JSONRetriever.sendRouteRequest(mContext, origin, destination, json ->  {
+
+                loadingManager.setLoadingMessage("Retrieving request response");
+                retrieveRouteDataFromJSON(json);
+
+                loadingManager.setLoadingMessage("Creating weather nodes");
+                createRouteWeatherNodes(() -> {
+
+                    // Make sure builder is able to create a complete route
+                    loadingManager.setLoadingMessage("Validating route data");
+                    if(RouteValuesValidator.validateBuilder(this)){
+                        loadingManager.setLoadingMessage("Finalizing route");
+                        final Route route = new Route(this);
+                        loadingManager.setLoadingMessage("Route built");
+                        callback.onRouteBuilt(route);
+                    }else{
+                        // Builder could not create route with the current data
+                        loadingManager.setLoadingMessage("Route building failed");
+                        callback.onRouteBuildingFailed();
+                    }
+                });
         });
 
 
-    }
 
-    private boolean allValuesAreValid(){
-
-        return this.origin != null
-                && this.originPlaceName != null
-                && this.destination != null
-                && this.destinationPlaceName != null
-                && this.startTime > 0
-                && this.coordinates != null
-                && this.coordinates.size() > 0
-                && this.lineString != null
-                && this.distance > 0
-                && this.duration > 0
-                && this.weatherNodes != null
-                && this.weatherNodes.size() > 0;
 
     }
 

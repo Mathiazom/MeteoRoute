@@ -1,5 +1,8 @@
 package com.mzom.meteoroute;
 
+import android.support.annotation.NonNull;
+import android.util.Log;
+
 import com.mapbox.directions.service.models.Waypoint;
 import com.mapbox.geojson.LineString;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -20,8 +23,6 @@ class Route {
     // Points to represent the route itself
     private ArrayList<LatLng> coordinates;
 
-    private LineString lineString;
-
     // Distance of route in meters
     private double distance = -1;
 
@@ -30,18 +31,17 @@ class Route {
 
     private ArrayList<WeatherNode> weatherNodes;
 
-    Route(final RouteBuilder routeBuilder) {
+    Route(@NonNull final RouteBuilder routeBuilder) {
 
-        this.origin = routeBuilder.origin;
-        this.originPlaceName = routeBuilder.originPlaceName;
-        this.destination = routeBuilder.destination;
-        this.destinationPlaceName = routeBuilder.destinationPlaceName;
-        this.startTime = routeBuilder.startTime;
-        this.coordinates = routeBuilder.coordinates;
-        this.lineString = routeBuilder.lineString;
-        this.distance = routeBuilder.distance;
-        this.duration = routeBuilder.duration;
-        this.weatherNodes = routeBuilder.weatherNodes;
+        this.origin = routeBuilder.getOrigin();
+        this.originPlaceName = routeBuilder.getOriginPlaceName();
+        this.destination = routeBuilder.getDestination();
+        this.destinationPlaceName = routeBuilder.getDestinationPlaceName();
+        this.startTime = routeBuilder.getStartTime();
+        this.coordinates = routeBuilder.getCoordinates();
+        this.distance = routeBuilder.getDistance();
+        this.duration = routeBuilder.getDuration();
+        this.weatherNodes = routeBuilder.getWeatherNodes();
 
     }
 
@@ -75,10 +75,6 @@ class Route {
 
     ArrayList<LatLng> getCoordinates(){
         return this.coordinates;
-    }
-
-    LineString getLineString(){
-        return this.lineString;
     }
 
     ArrayList<WeatherNode> getWeatherNodes(){
